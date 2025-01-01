@@ -10,7 +10,7 @@ case "${UNAMEOUT}" in
 esac
 
 if [ "$MACHINE" == "UNKNOWN" ]; then
-    echo "Unsupported operating system [$(uname -s)]. Laravel Sail supports macOS, Linux, and Windows (WSL2)." >&2
+    echo "Unsupported operating system [$(uname -s)]. Yii Sail supports macOS, Linux, and Windows (WSL2)." >&2
 
     exit 1
 fi
@@ -30,7 +30,7 @@ fi
 
 # Function that prints the available commands...
 function display_help {
-    echo "Laravel Sail"
+    echo "Yii Sail"
     echo
     echo "${YELLOW}Usage:${NC}" >&2
     echo "  sail COMMAND [options] [arguments]"
@@ -44,9 +44,9 @@ function display_help {
     echo "  ${GREEN}sail restart${NC}   Restart the application"
     echo "  ${GREEN}sail ps${NC}        Display the status of all containers"
     echo
-    echo "${YELLOW}Artisan Commands:${NC}"
-    echo "  ${GREEN}sail artisan ...${NC}          Run an Artisan command"
-    echo "  ${GREEN}sail artisan queue:work${NC}"
+    echo "${YELLOW}Yii Commands:${NC}"
+    echo "  ${GREEN}sail yii ...${NC}          Run a Yii command"
+    echo "  ${GREEN}sail yii migrate:up${NC}"
     echo
     echo "${YELLOW}PHP Commands:${NC}"
     echo "  ${GREEN}sail php ...${NC}   Run a snippet of PHP code"
@@ -86,35 +86,29 @@ function display_help {
     echo "  ${GREEN}sail mongodb${NC}   Start a Mongo Shell session within the 'mongodb' container"
     echo "  ${GREEN}sail redis${NC}     Start a Redis CLI session within the 'redis' container"
     echo "  ${GREEN}sail valkey${NC}    Start a Valkey CLI session within the 'valkey' container"
-    echo
-    echo "${YELLOW}Debugging:${NC}"
-    echo "  ${GREEN}sail debug ...${NC}          Run an Artisan command in debug mode"
-    echo "  ${GREEN}sail debug queue:work${NC}"
+
     echo
     echo "${YELLOW}Running Tests:${NC}"
-    echo "  ${GREEN}sail test${NC}          Run the PHPUnit tests via the Artisan test command"
+    echo "  ${GREEN}sail test${NC}          Run the Codeception tests via the codecept run command"
+    echo "  ${GREEN}sail codecept ...${NC}  Run Codeception"
     echo "  ${GREEN}sail phpunit ...${NC}   Run PHPUnit"
     echo "  ${GREEN}sail pest ...${NC}      Run Pest"
-    echo "  ${GREEN}sail pint ...${NC}      Run Pint"
-    echo "  ${GREEN}sail dusk${NC}          Run the Dusk tests (Requires the laravel/dusk package)"
-    echo "  ${GREEN}sail dusk:fails${NC}    Re-run previously failed Dusk tests (Requires the laravel/dusk package)"
+    echo "  ${GREEN}sail psalm ...${NC}     Run Psalm"
+    echo "  ${GREEN}sail rector ...${NC}    Run Rector"
     echo
     echo "${YELLOW}Container CLI:${NC}"
     echo "  ${GREEN}sail shell${NC}        Start a shell session within the application container"
     echo "  ${GREEN}sail bash${NC}         Alias for 'sail shell'"
     echo "  ${GREEN}sail root-shell${NC}   Start a root shell session within the application container"
     echo "  ${GREEN}sail root-bash${NC}    Alias for 'sail root-shell'"
-    echo "  ${GREEN}sail tinker${NC}       Start a new Laravel Tinker session"
     echo
-    echo "${YELLOW}Sharing:${NC}"
-    echo "  ${GREEN}sail share${NC}   Share the application publicly via a temporary URL"
+    echo "${YELLOW}Open:${NC}"
     echo "  ${GREEN}sail open${NC}    Open the site in your browser"
     echo
     echo "${YELLOW}Binaries:${NC}"
     echo "  ${GREEN}sail bin ...${NC}   Run Composer binary scripts from the vendor/bin directory"
     echo
     echo "${YELLOW}Customization:${NC}"
-    echo "  ${GREEN}sail artisan sail:publish${NC}   Publish the Sail configuration files"
     echo "  ${GREEN}sail build --no-cache${NC}       Rebuild all of the Sail containers"
 
     exit 1
@@ -129,7 +123,7 @@ else
     display_help
 fi
 
-# Source the ".env" file so Laravel's environment variables are available...
+# Source the ".env" file so Yii's environment variables are available...
 # shellcheck source=/dev/null
 if [ -n "$APP_ENV" ] && [ -f ./.env."$APP_ENV" ]; then
   source ./.env."$APP_ENV";
@@ -139,18 +133,12 @@ fi
 
 # Define environment variables...
 export APP_PORT=${APP_PORT:-80}
-export APP_SERVICE=${APP_SERVICE:-"laravel.test"}
+export APP_SERVICE=${APP_SERVICE:-"yii.test"}
 export DB_PORT=${DB_PORT:-3306}
 export WWWUSER=${WWWUSER:-$UID}
 export WWWGROUP=${WWWGROUP:-$(id -g)}
 
 export SAIL_FILES=${SAIL_FILES:-""}
-export SAIL_SHARE_DASHBOARD=${SAIL_SHARE_DASHBOARD:-4040}
-export SAIL_SHARE_SERVER_HOST=${SAIL_SHARE_SERVER_HOST:-"laravel-sail.site"}
-export SAIL_SHARE_SERVER_PORT=${SAIL_SHARE_SERVER_PORT:-8080}
-export SAIL_SHARE_SUBDOMAIN=${SAIL_SHARE_SUBDOMAIN:-""}
-export SAIL_SHARE_DOMAIN=${SAIL_SHARE_DOMAIN:-"$SAIL_SHARE_SERVER_HOST"}
-export SAIL_SHARE_SERVER=${SAIL_SHARE_SERVER:-""}
 
 # Function that outputs Sail is not running...
 function sail_is_not_running {
@@ -257,38 +245,38 @@ elif [ "$1" == "composer" ]; then
         sail_is_not_running
     fi
 
-# Proxy Artisan commands to the "artisan" binary on the application container...
-elif [ "$1" == "artisan" ] || [ "$1" == "art" ] || [ "$1" == "a" ]; then
+# Proxy Yii commands to the "yii" binary on the application container...
+elif [ "$1" == "yii" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
         ARGS+=(exec -u sail)
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php artisan)
+        ARGS+=("$APP_SERVICE" php yii)
     else
         sail_is_not_running
     fi
 
-# Proxy the "debug" command to the "php artisan" binary on the application container with xdebug enabled...
-elif [ "$1" == "debug" ]; then
-    shift 1
-
-    if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail -e XDEBUG_TRIGGER=1)
-        [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php artisan)
-    else
-        sail_is_not_running
-    fi
-
-# Proxy the "test" command to the "php artisan test" Artisan command...
+# Proxy the "test" command to the "composer test" command
 elif [ "$1" == "test" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
         ARGS+=(exec -u sail)
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php artisan test)
+        ARGS+=("$APP_SERVICE" composer test)
+    else
+        sail_is_not_running
+    fi
+
+# Proxy the "codecept" command to "php vendor/bin/codecept"...
+elif [ "$1" == "codecept" ] || [ "$1" == "codeception" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u sail)
+        [ ! -t 0 ] && ARGS+=(-T)
+        ARGS+=("$APP_SERVICE" php vendor/bin/codecept)
     else
         sail_is_not_running
     fi
@@ -317,54 +305,26 @@ elif [ "$1" == "pest" ]; then
         sail_is_not_running
     fi
 
-# Proxy the "pint" command to "php vendor/bin/pint"...
-elif [ "$1" == "pint" ]; then
+# Proxy the "psalm" command to "php vendor/bin/psalm"...
+elif [ "$1" == "psalm" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
         ARGS+=(exec -u sail)
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php vendor/bin/pint)
+        ARGS+=("$APP_SERVICE" php vendor/bin/psalm)
     else
         sail_is_not_running
     fi
 
-# Proxy the "dusk" command to the "php artisan dusk" Artisan command...
-elif [ "$1" == "dusk" ]; then
+# Proxy the "rector" command to "php vendor/bin/rector"...
+elif [ "$1" == "rector" ]; then
     shift 1
 
     if [ "$EXEC" == "yes" ]; then
         ARGS+=(exec -u sail)
         [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=(-e "APP_URL=http://${APP_SERVICE}")
-        ARGS+=(-e "DUSK_DRIVER_URL=http://selenium:4444/wd/hub")
-        ARGS+=("$APP_SERVICE" php artisan dusk)
-    else
-        sail_is_not_running
-    fi
-
-# Proxy the "dusk:fails" command to the "php artisan dusk:fails" Artisan command...
-elif [ "$1" == "dusk:fails" ]; then
-    shift 1
-
-    if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
-        [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=(-e "APP_URL=http://${APP_SERVICE}")
-        ARGS+=(-e "DUSK_DRIVER_URL=http://selenium:4444/wd/hub")
-        ARGS+=("$APP_SERVICE" php artisan dusk:fails)
-    else
-        sail_is_not_running
-    fi
-
-# Initiate a Laravel Tinker session within the application container...
-elif [ "$1" == "tinker" ]; then
-    shift 1
-
-    if [ "$EXEC" == "yes" ]; then
-        ARGS+=(exec -u sail)
-        [ ! -t 0 ] && ARGS+=(-T)
-        ARGS+=("$APP_SERVICE" php artisan tinker)
+        ARGS+=("$APP_SERVICE" php vendor/bin/rector)
     else
         sail_is_not_running
     fi
@@ -560,25 +520,6 @@ elif [ "$1" == "valkey" ]; then
         ARGS+=(exec)
         [ ! -t 0 ] && ARGS+=(-T)
         ARGS+=(valkey valkey-cli)
-    else
-        sail_is_not_running
-    fi
-
-# Share the site...
-elif [ "$1" == "share" ]; then
-    shift 1
-
-    if [ "$EXEC" == "yes" ]; then
-        docker run --init --rm --add-host=host.docker.internal:host-gateway -p "$SAIL_SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest share http://host.docker.internal:"$APP_PORT" \
-            --server-host="$SAIL_SHARE_SERVER_HOST" \
-            --server-port="$SAIL_SHARE_SERVER_PORT" \
-            --auth="$SAIL_SHARE_TOKEN" \
-            --server="$SAIL_SHARE_SERVER" \
-            --subdomain="$SAIL_SHARE_SUBDOMAIN" \
-            --domain="$SAIL_SHARE_DOMAIN" \
-            "$@"
-
-        exit
     else
         sail_is_not_running
     fi

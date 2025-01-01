@@ -1,8 +1,8 @@
 # For more information: https://laravel.com/docs/sail
 services:
-    laravel.test:
+    yii.test:
         build:
-            context: ./vendor/laravel/sail/runtimes/{{PHP_VERSION}}
+            context: ./vendor/muffin-hayate/yii-sail/runtimes/{{PHP_VERSION}}
             dockerfile: Dockerfile
             args:
                 WWWGROUP: '${WWWGROUP}'
@@ -14,7 +14,7 @@ services:
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
             WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
+            YII_SAIL: 1
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
